@@ -24,6 +24,8 @@ endm
 modules Module 16 dup(<>)
 PROB1 real8 0.1796875
 PROB2 real8 0.0546875
+MAX_RAND real8 32767.0
+MAX_ENTROPY real8 10000000000000000000000000000.0
 public modules
 
 .code
@@ -153,15 +155,331 @@ calculateEntropy proc uses eax ebx ecx esi edi, block: dword
 calculateEntropy endp
 
 collapse proc uses eax ebx ecx edx esi edi, blocks: dword, x: sdword, y: sdword
+	local   block:dword,
+			__max:real8
 	mov esi, blocks
 	mov eax, x
 	mov ebx, sizeof dword
 	mov edx, 0
 	mul ebx
-	add esi, 
+	add esi, eax
+	mov esi, dword ptr [esi]
+	mov eax, y
+	mov ebx, sizeof dword
+	mov edx, 0
+	mul ebx
+	add esi, eax
+	mov block, esi
+	mov ecx, 0
+	fldz
+	.while ecx < 16
+		mov esi, (Block ptr [esi]).availableModules
+		mov eax, ecx
+		mov edx, 0
+		mov ebx, sizeof Module
+		mul ebx
+		mov edi, offset modules
+		add edi, eax
+		mov eax, (Module ptr [edi]).id
+		and eax, esi
+		.if eax != false
+			fld (Module ptr [edi]).probability
+			fadd
+		.endif
+		inc ecx
+	.endw
+	fst __max
+	invoke crt_rand
+	fld MAX_RAND
+	fdiv
+	fld __max
+	fmul
+
+	mov ecx, 0
+	.while ecx < 16
+		mov esi, block
+		mov esi, (Block ptr [esi]).availableModules
+		mov eax, ecx
+		mov edx, 0
+		mov ebx, sizeof Module
+		mul ebx
+		mov edi, offset modules
+		add edi, eax
+		mov eax, (Module ptr [edi]).id
+		and eax, esi
+		.if eax != false
+			fld (Module ptr [edi]).probability
+			fsub
+			fldz
+			fcomp
+			fnstsw ax
+			.if (ax == 3000h) || (ax == 7000h)
+				mov esi, block
+				mov (Block ptr [esi]).id, ecx
+			.endif
+		.endif
+		inc ecx
+	.endw
+
+	mov esi, block
+	mov eax, (Block ptr [esi]).id
+	.if eax == -1
+		mov (Block ptr [esi]).id, 0
+	.endif
+
+	.if y > 0
+		mov esi, block
+		mov eax, (Block ptr [esi]).id
+		mov edx, 0
+		mov ebx, sizeof Module
+		mul ebx
+		mov esi, offset modules
+		add esi, eax
+		mov al, (Module ptr [esi]).upId
+		.if al != false
+			mov eax, x
+			mov edx, 0
+			mov ebx, sizeof dword
+			mul ebx
+			mov esi, blocks
+			add esi, eax
+			mov esi, dword ptr [esi]
+			mov eax, y
+			mov edx, 0
+			dec eax
+			mov ebx, sizeof Block
+			mul ebx
+			add esi, eax
+			mov eax, (Block ptr [esi]).availableModules
+			mov ebx, 0010111010110010b
+			and ebx, eax
+			mov (Block ptr [esi]).availableModules, ebx
+			.if eax != ebx
+				mov (Block ptr [esi]).entropyOutdated, true
+			.endif
+		.else
+			mov eax, x
+			mov edx, 0
+			mov ebx, sizeof dword
+			mul ebx
+			mov esi, blocks
+			add esi, eax
+			mov esi, dword ptr [esi]
+			mov eax, y
+			mov edx, 0
+			dec eax
+			mov ebx, sizeof Block
+			mul ebx
+			add esi, eax
+			mov eax, (Block ptr [esi]).availableModules
+			mov ebx, 1101000101001101b
+			and ebx, eax
+			mov (Block ptr [esi]).availableModules, ebx
+			.if eax != ebx
+				mov (Block ptr [esi]).entropyOutdated, true
+			.endif
+		.endif
+	.endif
+	.if x > 0
+		mov esi, block
+		mov eax, (Block ptr [esi]).id
+		mov edx, 0
+		mov ebx, sizeof Module
+		mul ebx
+		mov esi, offset modules
+		add esi, eax
+		mov al, (Module ptr [esi]).leftId
+		.if al != false
+			mov eax, x
+			mov edx, 0
+			dec eax
+			mov ebx, sizeof dword
+			mul ebx
+			mov esi, blocks
+			add esi, eax
+			mov esi, dword ptr [esi]
+			mov eax, y
+			mov edx, 0
+			mov ebx, sizeof Block
+			mul ebx
+			add esi, eax
+			mov eax, (Block ptr [esi]).availableModules
+			mov ebx, 0001111101100100b
+			and ebx, eax
+			mov (Block ptr [esi]).availableModules, ebx
+			.if eax != ebx
+				mov (Block ptr [esi]).entropyOutdated, true
+			.endif
+		.else
+			mov eax, x
+			mov edx, 0
+			dec eax
+			mov ebx, sizeof dword
+			mul ebx
+			mov esi, blocks
+			add esi, eax
+			mov esi, dword ptr [esi]
+			mov eax, y
+			mov edx, 0
+			mov ebx, sizeof Block
+			mul ebx
+			add esi, eax
+			mov eax, (Block ptr [esi]).availableModules
+			mov ebx, 1110000010011011b
+			and ebx, eax
+			mov (Block ptr [esi]).availableModules, ebx
+			.if eax != ebx
+				mov (Block ptr [esi]).entropyOutdated, true
+			.endif
+		.endif
+	.endif
+	.if y < 7
+		mov esi, block
+		mov eax, (Block ptr [esi]).id
+		mov edx, 0
+		mov ebx, sizeof Module
+		mul ebx
+		mov esi, offset modules
+		add esi, eax
+		mov al, (Module ptr [esi]).downId
+		.if al != false
+			mov eax, x
+			mov edx, 0
+			mov ebx, sizeof dword
+			mul ebx
+			mov esi, blocks
+			add esi, eax
+			mov esi, dword ptr [esi]
+			mov eax, y
+			mov edx, 0
+			inc eax
+			mov ebx, sizeof Block
+			mul ebx
+			add esi, eax
+			mov eax, (Block ptr [esi]).availableModules
+			mov ebx, 1000101111001010b
+			and ebx, eax
+			mov (Block ptr [esi]).availableModules, ebx
+			.if eax != ebx
+				mov (Block ptr [esi]).entropyOutdated, true
+			.endif
+		.else
+			mov eax, x
+			mov edx, 0
+			mov ebx, sizeof dword
+			mul ebx
+			mov esi, blocks
+			add esi, eax
+			mov esi, dword ptr [esi]
+			mov eax, y
+			mov edx, 0
+			inc eax
+			mov ebx, sizeof Block
+			mul ebx
+			add esi, eax
+			mov eax, (Block ptr [esi]).availableModules
+			mov ebx, 0111010000110101b
+			and ebx, eax
+			mov (Block ptr [esi]).availableModules, ebx
+			.if eax != ebx
+				mov (Block ptr [esi]).entropyOutdated, true
+			.endif
+		.endif
+	.endif
+	.if x < 7
+		mov esi, block
+		mov eax, (Block ptr [esi]).id
+		mov edx, 0
+		mov ebx, sizeof Module
+		mul ebx
+		mov esi, offset modules
+		add esi, eax
+		mov al, (Module ptr [esi]).rightId
+		.if al != false
+			mov eax, x
+			mov edx, 0
+			inc eax
+			mov ebx, sizeof dword
+			mul ebx
+			mov esi, blocks
+			add esi, eax
+			mov esi, dword ptr [esi]
+			mov eax, y
+			mov edx, 0
+			mov ebx, sizeof Block
+			mul ebx
+			add esi, eax
+			mov eax, (Block ptr [esi]).availableModules
+			mov ebx, 0100110110011100b
+			and ebx, eax
+			mov (Block ptr [esi]).availableModules, ebx
+			.if eax != ebx
+				mov (Block ptr [esi]).entropyOutdated, true
+			.endif
+		.else
+			mov eax, x
+			mov edx, 0
+			inc eax
+			mov ebx, sizeof dword
+			mul ebx
+			mov esi, blocks
+			add esi, eax
+			mov esi, dword ptr [esi]
+			mov eax, y
+			mov edx, 0
+			mov ebx, sizeof Block
+			mul ebx
+			add esi, eax
+			mov eax, (Block ptr [esi]).availableModules
+			mov ebx, 1011001001100011b
+			and ebx, eax
+			mov (Block ptr [esi]).availableModules, ebx
+			.if eax != ebx
+				mov (Block ptr [esi]).entropyOutdated, true
+			.endif
+		.endif
+	.endif
+	ret
 collapse endp
 
-collapseAll proc, blocks: dword
+collapseAll proc uses eax ebx ecx edx esi edi, blocks: dword
+	local   i:dword,
+			j:dword
+	mov edi, 0
+	mov i, 0
+	.while i < 64
+		fld MAX_ENTROPY
+		mov j, 0
+		.while j < 64
+			mov eax, j
+			mov edx, 0
+			mov ebx, sizeof Block
+			mul ebx
+			mov esi, blocks
+			mov esi, dword ptr [esi]
+			add esi, eax
+			invoke calculateEntropy, esi
+			fld (Block ptr [esi]).entropy
+			fcomp
+			fnstsw ax
+			mov ebx, (Block ptr [esi]).id
+			.if (ax == 3100h) && (ebx > 16)
+				fld (Block ptr [esi]).entropy
+				mov edi, j
+			.endif
+			mov eax, j
+			inc eax
+			mov j, eax
+		.endw
+		mov eax, edi
+		shr eax, 3
+		mov ebx, edi
+		and ebx, 111b
+		invoke collapse, blocks, eax, ebx
+		mov eax, i
+		inc eax
+		mov i, eax
+	.endw
 collapseAll endp
 
 end
