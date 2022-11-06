@@ -15,24 +15,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <MASM Include="main.asm">
-      <Filter>源文件</Filter>
-    </MASM>
-    <MASM Include="game_objects.asm">
-      <Filter>源文件</Filter>
-    </MASM>
-    <MASM Include="game_logic_middle.asm">
-      <Filter>源文件</Filter>
-    </MASM>
-    <MASM Include="game_logic_base.asm">
-      <Filter>源文件</Filter>
-    </MASM>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="game_objects.inc">
+    <None Include="windef.inc">
       <Filter>头文件</Filter>
     </None>
-    <None Include="windef.inc">
+    <None Include="avl_tree.inc">
       <Filter>头文件</Filter>
     </None>
     <None Include="game_logic_base.inc">
@@ -41,5 +27,43 @@
     <None Include="game_logic_middle.inc">
       <Filter>头文件</Filter>
     </None>
+    <None Include="game_logic_top.inc">
+      <Filter>头文件</Filter>
+    </None>
+    <None Include="game_objects.inc">
+      <Filter>头文件</Filter>
+    </None>
+    <None Include="infinite_wfc.inc">
+      <Filter>头文件</Filter>
+    </None>
+    <None Include="wfc.inc">
+      <Filter>头文件</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="main.asm">
+      <Filter>源文件</Filter>
+    </MASM>
+    <MASM Include="avl_tree.asm">
+      <Filter>源文件</Filter>
+    </MASM>
+    <MASM Include="game_logic_base.asm">
+      <Filter>源文件</Filter>
+    </MASM>
+    <MASM Include="game_logic_middle.asm">
+      <Filter>源文件</Filter>
+    </MASM>
+    <MASM Include="game_logic_top.asm">
+      <Filter>源文件</Filter>
+    </MASM>
+    <MASM Include="game_objects.asm">
+      <Filter>源文件</Filter>
+    </MASM>
+    <MASM Include="infinite_wfc.asm">
+      <Filter>源文件</Filter>
+    </MASM>
+    <MASM Include="wfc.asm">
+      <Filter>源文件</Filter>
+    </MASM>
   </ItemGroup>
 </Project>
