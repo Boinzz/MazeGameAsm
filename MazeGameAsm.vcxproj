@@ -82,6 +82,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:/masm32/lib;G:/Irvine;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>msimg32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <MASM>
       <IncludePaths>C:/masm32/include;G:/Irvine;%(IncludePaths)</IncludePaths>
@@ -132,16 +133,24 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <MASM Include="game_logic_base.asm" />
-    <MASM Include="game_logic_middle.asm" />
-    <MASM Include="game_objects.asm" />
-    <MASM Include="main.asm" />
-  </ItemGroup>
-  <ItemGroup>
+    <None Include="avl_tree.inc" />
     <None Include="game_logic_base.inc" />
     <None Include="game_logic_middle.inc" />
+    <None Include="game_logic_top.inc" />
     <None Include="game_objects.inc" />
+    <None Include="infinite_wfc.inc" />
+    <None Include="wfc.inc" />
     <None Include="windef.inc" />
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="avl_tree.asm" />
+    <MASM Include="game_logic_base.asm" />
+    <MASM Include="game_logic_middle.asm" />
+    <MASM Include="game_logic_top.asm" />
+    <MASM Include="game_objects.asm" />
+    <MASM Include="infinite_wfc.asm" />
+    <MASM Include="main.asm" />
+    <MASM Include="wfc.asm" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

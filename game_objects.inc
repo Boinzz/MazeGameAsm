@@ -3,130 +3,145 @@ __GAME_OBJECTS_INC__ macro
 endm
 
 include windef.inc
+include avl_tree.inc
 
 MoveStatus textequ <sdword>
-
 MV_STILL textequ <0>
 MV_UP textequ <1>
 MV_DOWN textequ <2>
 MV_LEFT textequ <3>
 MV_RIGHT textequ <4>
 
-EXTENDS macro super
-	super
+extends macro param:REQ
+	param
 endm
 
-M_GAME_OBJECT_DEF macro
+GAME_OBJECT_DEF macro
 	id sdword ?
-	frameWidth sdword ?
-	frameHeight sdword ?
+	_width sdword ?
+	__height sdword ?
 	frameCount sdword ?
-	frameLengths Pointer ?
-	frames Pointer ?
+	frameLengths dword ?
+	frames dword ?
 endm
 
 GameObjectDef struct
-	M_GAME_OBJECT_DEF
+	GAME_OBJECT_DEF
 GameObjectDef ends
 
-M_GAME_OBJECT macro
+GAME_OBJECT macro
 	id sdword ?
 	posX sdword ?
 	posY sdword ?
-	objDef Pointer ?
+	def dword ?
 	currentFrame sdword ?
+	nextFrame sdword ?
+	tick sdword ?
 	toBeDestroyed bool ?
 endm
 
 GameObject struct
-	M_GAME_OBJECT
+	GAME_OBJECT
 GameObject ends
 
-M_DESTROYABLE macro
-	EXTENDS M_GAME_OBJECT
+MAP_TILE macro
+	extends GAME_OBJECT
+	walkable bool ?
+endm
+
+MapTile struct
+	MAP_TILE
+MapTile ends
+
+DESTROYABLE macro
+	extends GAME_OBJECT
 	hp sdword ?
 	mapId sdword ?
 endm
 
 Destroyable struct
-	M_DESTROYABLE
+	DESTROYABLE
 Destroyable ends
 
-M_LIVING macro
-	EXTENDS M_DESTROYABLE
+LIVING macro
+	extends DESTROYABLE
 	moveStatus MoveStatus ?
 	speed sdword ?
 endm
 
 Living struct
-	M_LIVING
+	LIVING
 Living ends
 
-M_PLAYER macro
-	EXTENDS M_LIVING
-	attacking bool ?
+PLAYER macro
+	extends LIVING
 	coins sdword ?
 	level sdword ?
 endm
 
 Player struct
-	M_PLAYER
+	PLAYER
 Player ends
 
-M_ENEMY macro
-	EXTENDS M_LIVING
+ENEMY macro
+	extends LIVING
 	targetId sdword ?
 endm
 
 Enemy struct
-	M_ENEMY
+	ENEMY
 Enemy ends
 
-M_BULLET macro
-	EXTENDS M_GAME_OBJECT
-	velX real4 ?
-	velY real4 ?
+BULLET macro
+	extends GAME_OBJECT
+	velX real8 ?
+	velY real8 ?
 	damage sdword ?
 endm
 
 Bullet struct
-	M_BULLET
+	BULLET
 Bullet ends
 
-M_TOWER macro
-	EXTENDS M_DESTROYABLE
+TOWER macro
+	extends DESTROYABLE
 	level sdword ?
-	targetId sdword ?
 endm
 
 Tower struct
-	M_TOWER
+	TOWER
 Tower ends
 
 ListNode struct
-	value Pointer ?
-	next Pointer ?
+	value dword ?
+	next dword ?
 ListNode ends
 
-List textequ Pointer
+List textequ <dword>
 
 Map struct
-	tiles List ?
-	destroyables List ?
-	bullets List ?
+	tilesHead List ?
+	destroyablesHead List ?
+	bulletsHead List ?
+	tilesEnd List ?
+	destroyablesEnd List ?
+	bulletsEnd List ?
+	tilesMap dword ?
 Map ends
 
 Game struct
 	ground Map <>
 	underground Map <>
 	playerOnGround bool ?
-	
-	player Pointer ?
+	player dword ?
+	towers dword ?
+	globalTick sdword ?
+	score sdword ?
 Game ends
 
 ifndef __GAME_OBJECTS_ASM__
 .data
-	extern GAME_INSTANCE: Game
+extern GAME_INSTANCE:Game
 endif
 
 endif

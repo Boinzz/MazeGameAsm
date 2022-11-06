@@ -1,11 +1,13 @@
 __GAME_OBJECTS_ASM__ macro
 endm
 
+.386
+.model flat, stdcall
+option casemap: none
+
 include game_objects.inc
 
-public GAME_INSTANCE
-
 .data
-	GAME_INSTANCE Game <>
-
+GAME_INSTANCE Game <>
+public GAME_INSTANCE
 end
