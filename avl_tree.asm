@@ -28,9 +28,7 @@ createNode endp
 createTree proc uses esi
 	new AVLTree
 	mov esi, eax
-
-	mov eax, 0
-	mov (AVLTree ptr [esi]).mRoot, eax
+	mov (AVLTree ptr [esi]).mRoot, nullptr
 
 	return esi
 createTree endp
@@ -42,17 +40,16 @@ _height proc uses esi, tree: dword
 		ret
 	.endif
 
-	return esi
+	return 0
 _height endp
 
 height proc uses esi, self: dword
 	mov esi, self
-	mov eax, (AVLTree ptr [esi]).mRoot
-	invoke _height, eax
+	invoke _height, (AVLTree ptr [esi]).mRoot
 	ret
 height endp
 
-_max proc, a: sdword, b: sdword
+_max proc, a: dword, b: dword
 	mov eax, a
 	mov ebx, b
 	.if eax < ebx
@@ -169,44 +166,46 @@ _insert proc uses esi ebx edi, tree: dword, key: dword, value: dword
 	.if esi == nullptr
 		invoke createNode, key, value, nullptr, nullptr
 		mov esi, eax
-	mov eax, (AVLTreeNode ptr [esi]).key
-	.elseif key < eax
-		invoke _insert, (AVLTreeNode ptr [esi]).left, key, value
-		invoke _height, (AVLTreeNode ptr [esi]).right
-		mov ebx, eax
-		invoke _height, (AVLTreeNode ptr [esi]).left
-		sub eax, ebx
-		.if eax == 2
-			mov edi, (AVLTreeNode ptr [esi]).left
-			mov eax, (AVLTreeNode ptr [edi]).key
-			.if key < eax
-				invoke leftLeftRotation, esi
-				mov esi, eax
-			.else
-				invoke leftRightRotation, esi
-				mov esi, eax
-			.endif
-		.endif
-	.elseif key > eax
-		invoke _insert, (AVLTreeNode ptr [esi]).right, key, value
-		invoke _height, (AVLTreeNode ptr [esi]).left
-		mov ebx, eax
-		invoke _height, (AVLTreeNode ptr [esi]).right
-		sub eax, ebx
-		.if eax == 2
-			mov edi, (AVLTreeNode ptr [esi]).right
-			mov eax, (AVLTreeNode ptr [edi]).key
-			.if key < eax
-				invoke rightRightRotation, esi
-				mov esi, eax
-			.else
-				invoke rightLeftRotation, esi
-				mov esi, eax
-			.endif
-		.endif
 	.else
-		mov eax, value
-		mov (AVLTreeNode ptr [esi]).value, eax
+		mov eax, (AVLTreeNode ptr [esi]).key
+		.if key < eax
+			invoke _insert, (AVLTreeNode ptr [esi]).left, key, value
+			invoke _height, (AVLTreeNode ptr [esi]).right
+			mov ebx, eax
+			invoke _height, (AVLTreeNode ptr [esi]).left
+			sub eax, ebx
+			.if eax == 2
+				mov edi, (AVLTreeNode ptr [esi]).left
+				mov eax, (AVLTreeNode ptr [edi]).key
+				.if key < eax
+					invoke leftLeftRotation, esi
+					mov esi, eax
+				.else
+					invoke leftRightRotation, esi
+					mov esi, eax
+				.endif
+			.endif
+		.elseif key > eax
+			invoke _insert, (AVLTreeNode ptr [esi]).right, key, value
+			invoke _height, (AVLTreeNode ptr [esi]).left
+			mov ebx, eax
+			invoke _height, (AVLTreeNode ptr [esi]).right
+			sub eax, ebx
+			.if eax == 2
+				mov edi, (AVLTreeNode ptr [esi]).right
+				mov eax, (AVLTreeNode ptr [edi]).key
+				.if key < eax
+					invoke rightRightRotation, esi
+					mov esi, eax
+				.else
+					invoke rightLeftRotation, esi
+					mov esi, eax
+				.endif
+			.endif
+		.else
+			mov eax, value
+			mov (AVLTreeNode ptr [esi]).value, eax
+		.endif
 	.endif
 
 	invoke _height, (AVLTreeNode ptr [esi]).right

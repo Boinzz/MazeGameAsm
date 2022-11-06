@@ -18,7 +18,7 @@ createNode proto, key: dword, value: dword, l: dword, r: dword
 createTree proto
 _height proto, tree: dword
 height proto, self: dword
-_max proto, a: sdword, b: sdword
+_max proto, a: dword, b: dword
 _search proto, x: dword, key: dword
 search proto, self: dword, key: dword
 _maximum proto, tree: dword

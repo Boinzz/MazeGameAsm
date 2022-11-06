@@ -679,15 +679,342 @@ addToMap proc uses eax ebx esi edi, map: dword, obj: dword, _type: ObjType
 	ret
 addToMap endp
 
-moveLogic proc, obj: dword, velX: sdword, velY: sdword
+moveLogic proc uses ebx esi, obj: dword, velX: sdword, velY: sdword
+	local   targetX:sdword,
+			targetY:sdword,
+			map:dword
+	.if (velX == 0) && (velY == 0)
+		return true
+	.endif
+	mov esi, obj
+	mov eax, (Destroyable ptr [esi]).posX
+	mov targetX, eax
+	mov esi, (Destroyable ptr [esi]).def
+	mov eax, (GameObjectDef ptr [esi])._width
+	mov edx, 0
+	mov ebx, 2
+	div ebx
+	add eax, targetX
+	add eax, velX
+	mov targetX, eax
+
+	mov esi, obj
+	mov eax, (Destroyable ptr [esi]).posY
+	mov targetY, eax
+	mov esi, (Destroyable ptr [esi]).def
+	mov eax, (GameObjectDef ptr [esi]).__height
+	mov edx, 0
+	mov ebx, 2
+	div ebx
+	add eax, targetY
+	add eax, velY
+	mov targetY, eax
+
+	mov esi, obj
+	mov eax, (Destroyable ptr [esi]).mapId
+	.if eax == 0
+		mov eax, offset GAME_INSTANCE.ground
+		mov map, eax
+	.else
+		mov eax, offset GAME_INSTANCE.underground
+		mov map, eax
+	.endif
+
+	mov eax, targetX
+	mov ebx, targetY
+	sar eax, 6
+	sar ebx, 6
+	and eax, 0ffffh
+	shl ebx, 16
+	or eax, ebx
+	mov esi, map
+	invoke search, (Map ptr [esi]).tilesMap, eax
+	.if eax == nullptr
+		.if (velX == 0) || (velY == 0)
+			return false
+		.else
+			invoke moveLogic, obj, velX, 0
+			.if eax != false
+				ret
+			.endif
+			invoke moveLogic, obj, 0, velY
+			ret
+		.endif
+	.endif
+	mov eax, (ListNode ptr [eax]).value
+	mov al, (MapTile ptr [eax]).walkable
+	.if al == false
+		.if (velX == 0) || (velY == 0)
+			return false
+		.else
+			invoke moveLogic, obj, velX, 0
+			.if eax != false
+				ret
+			.endif
+			invoke moveLogic, obj, 0, velY
+			ret
+		.endif
+	.endif
+	mov esi, obj
+	mov eax, (Destroyable ptr [esi]).posX
+	add eax, velX
+	mov (Destroyable ptr [esi]).posX, eax
+	mov eax, (Destroyable ptr [esi]).posY
+	add eax, velY
+	mov (Destroyable ptr [esi]).posY, eax
 	return true
 moveLogic endp
 
-playerLogic proc
+playerLogic proc uses eax ebx ecx edx esi edi
+	local   map:dword,
+			frame:dword,
+			nextFrame:dword
+	mov esi, GAME_INSTANCE.player
+	mov eax, (Player ptr [esi]).mapId
+	.if eax == 0
+		mov eax, offset GAME_INSTANCE.ground
+	.else
+		mov eax, offset GAME_INSTANCE.underground
+	.endif
+	mov map, eax
+	mov eax, (Player ptr [esi]).posX
+	mov ebx, (Player ptr [esi]).posY
+	sar eax, 6
+	sar ebx, 6
+	and eax, 0ffffh
+	shl ebx, 16
+	or eax, ebx
+	mov edi, map
+	invoke search, (Map ptr [edi]).tilesMap, eax
+	.if eax != nullptr
+		mov edi, eax
+		mov edi, (ListNode ptr [edi]).value
+		mov edi, (GameObject ptr [edi]).def
+		mov edi, (GameObjectDef ptr [edi]).id
+		.if edi == objDefList.gate.id
+			mov eax, (Player ptr [esi]).posX
+			mov ebx, (Player ptr [esi]).posY
+			add eax, 32
+			add ebx, 32
+			.if (eax > 8) && (eax < 56) && (ebx > 8) && (ebx < 56)
+				invoke changeMap
+				ret
+			.endif
+		.endif
+	.endif
+
+	mov eax, (Player ptr [esi]).currentFrame
+	mov frame, eax
+	mov eax, (Player ptr [esi]).nextFrame
+	mov nextFrame, eax
+
+	mov eax, (Player ptr [esi]).mapId
+	.if eax == 1
+		invoke infiniteGenMap, (Player ptr [esi]).posX, (Player ptr [esi]).posY
+	.endif
+	mov ecx, (Player ptr [esi]).tick
+	mov eax, (Player ptr [esi]).currentFrame
+	mov edx, 0
+	mov ebx, sizeof dword
+	mul ebx
+	mov edi, (Player ptr [esi]).def
+	mov edi, (GameObjectDef ptr [edi]).frameLengths
+	add edi, eax
+	mov eax, ecx
+	mov edx, 0
+	mov ebx, dword ptr [edi]
+	div ebx
+	.if edx == 0
+		mov eax, (Player ptr [esi]).moveStatus
+		.if eax == MV_STILL
+			.if frame <= 2
+				mov (Player ptr [esi]).currentFrame, 1
+				mov (Player ptr [esi]).nextFrame, 1
+			.elseif frame <= 5
+				mov (Player ptr [esi]).currentFrame, 4
+				mov (Player ptr [esi]).nextFrame, 4
+			.elseif frame <= 8
+				mov (Player ptr [esi]).currentFrame, 7
+				mov (Player ptr [esi]).nextFrame, 7
+			.else
+				mov (Player ptr [esi]).currentFrame, 10
+				mov (Player ptr [esi]).nextFrame, 10
+			.endif
+		.else
+			mov eax, nextFrame
+			mov (Player ptr [esi]).currentFrame, eax
+			.if eax > frame
+				mov eax, nextFrame
+				mov edx, 0
+				mov ebx, 3
+				div ebx
+				.if edx == 1
+					mov eax, (Player ptr [esi]).nextFrame
+					inc eax
+					mov (Player ptr [esi]).nextFrame, eax
+				.else
+					mov eax, (Player ptr [esi]).nextFrame
+					dec eax
+					mov (Player ptr [esi]).nextFrame, eax
+				.endif
+			.else
+				mov eax, nextFrame
+				mov edx, 0
+				mov ebx, 3
+				div ebx
+				.if edx == 1
+					mov eax, (Player ptr [esi]).nextFrame
+					dec eax
+					mov (Player ptr [esi]).nextFrame, eax
+				.else
+					mov eax, (Player ptr [esi]).nextFrame
+					inc eax
+					mov (Player ptr [esi]).nextFrame, eax
+				.endif
+			.endif
+
+			mov eax, (Player ptr [esi]).moveStatus
+			.if eax == MV_UP
+				mov eax, frame
+				mov edx, 0
+				mov ebx, 3
+				div ebx
+				.if eax != 0
+					mov (Player ptr [esi]).currentFrame, 1
+					mov (Player ptr [esi]).nextFrame, 2
+				.endif
+			.endif
+
+			mov eax, (Player ptr [esi]).moveStatus
+			.if eax == MV_LEFT
+				mov eax, frame
+				mov edx, 0
+				mov ebx, 3
+				div ebx
+				.if eax != 1
+					mov (Player ptr [esi]).currentFrame, 1
+					mov (Player ptr [esi]).nextFrame, 2
+				.endif
+			.endif
+
+			mov eax, (Player ptr [esi]).moveStatus
+			.if eax == MV_DOWN
+				mov eax, frame
+				mov edx, 0
+				mov ebx, 3
+				div ebx
+				.if eax != 2
+					mov (Player ptr [esi]).currentFrame, 1
+					mov (Player ptr [esi]).nextFrame, 2
+				.endif
+			.endif
+
+			mov eax, (Player ptr [esi]).moveStatus
+			.if eax == MV_RIGHT
+				mov eax, frame
+				mov edx, 0
+				mov ebx, 3
+				div ebx
+				.if eax != 3
+					mov (Player ptr [esi]).currentFrame, 1
+					mov (Player ptr [esi]).nextFrame, 2
+				.endif
+			.endif
+		.endif
+	.endif
+
+	mov eax, 0
+	mov ebx, 0
+	.if controller.wDown != false
+		sub ebx, (Player ptr [esi]).speed
+	.endif
+	.if controller.aDown != false
+		sub eax, (Player ptr [esi]).speed
+	.endif
+	.if controller.sDown != false
+		add ebx, (Player ptr [esi]).speed
+	.endif
+	.if controller.dDown != false
+		add eax, (Player ptr [esi]).speed
+	.endif
+	invoke moveLogic, esi, eax, ebx
+
+	.if (controller.aDown != false) && (controller.dDown == false)
+		mov (Player ptr [esi]).moveStatus, MV_LEFT
+	.elseif (controller.dDown != false) && (controller.aDown == false)
+		mov (Player ptr [esi]).moveStatus, MV_RIGHT
+	.elseif (controller.wDown != false) && (controller.sDown == false)
+		mov (Player ptr [esi]).moveStatus, MV_UP
+	.elseif (controller.sDown != false) && (controller.wDown == false)
+		mov (Player ptr [esi]).moveStatus, MV_DOWN
+	.else
+		mov (Player ptr [esi]).moveStatus, MV_STILL
+	.endif
+	invoke playerAttackLogic
 	ret
 playerLogic endp
 
-enemyLogic proc, enemy: dword
+enemyLogic proc uses eax ebx ecx edx esi edi, enemy: dword
+	local   frame:dword,
+			nextFrame:dword,
+			__hp:sdword
+	mov esi, enemy
+	mov frame, (Enemy ptr [esi]).currentFrame
+	mov nextFrame, (Enemy ptr [esi]).nextFrame
+
+	mov ecx, (Enemy ptr [esi]).tick
+	mov eax, (Enemy ptr [esi]).currentFrame
+	mov edx, 0
+	mov ebx, sizeof dword
+	mul ebx
+	mov edi, (Enemy ptr [esi]).def
+	mov edi, (GameObjectDef ptr [edi]).frameLengths
+	add edi, eax
+	mov eax, ecx
+	mov edx, 0
+	mov ebx, dword ptr [edi]
+	div ebx
+	.if edx == 0
+		mov eax, nextFrame
+		mov (Enemy ptr [esi]).currentFrame, eax
+		mov eax, frame
+		mov (Enemy ptr [esi]).nextFrame, eax
+
+		mov eax, (Enemy ptr [esi]).currentFrame
+		mov edx, 0
+		mov edx, 2
+		div edx
+		mov edx, eax
+		mov eax, (Enemy ptr [esi]).moveStatus
+		.if (eax == MV_UP) && (edx != 0)
+			mov (Enemy ptr [esi]).currentFrame, 0
+			mov (Enemy ptr [esi]).nextFrame, 1
+		.endif
+		.if (eax == MV_LEFT) && (edx != 1)
+			mov (Enemy ptr [esi]).currentFrame, 2
+			mov (Enemy ptr [esi]).nextFrame, 3
+		.endif
+		.if (eax == MV_DOWN) && (edx != 2)
+			mov (Enemy ptr [esi]).currentFrame, 4
+			mov (Enemy ptr [esi]).nextFrame, 5
+		.endif
+		.if (eax == MV_RIGHT) && (edx != 3)
+			mov (Enemy ptr [esi]).currentFrame, 6
+			mov (Enemy ptr [esi]).nextFrame, 7
+		.endif
+	.endif
+
+	mov eax, (Enemy ptr [esi]).hp
+	mov __hp, eax
+	.if __hp <= 0
+		mov (Enemy ptr [esi]).toBeDestroyed, true
+		mov eax, (Enemy ptr [esi]).mapId
+		.if eax == 1
+			mov eax, GAME_INSTANCE.score
+			inc eax
+			mov GAME_INSTANCE.score, eax
+		.endif
+	.endif
 	ret
 enemyLogic endp
 
@@ -711,11 +1038,82 @@ upgradeLogic proc
 	ret
 upgradeLogic endp
 
-genEnemy proc
+genEnemy proc uses eax ebx ecx edx
+	local   enemyAmount:dword,
+			enemyHp:dword,
+			edgeId:dword,
+			pos:sdword
+	mov eax, GAME_INSTANCE.globalTick
+	mov edx, 0
+	mov ebx, 720
+	div ebx
+	inc eax
+	mov enemyAmount, eax
+	mov eax, GAME_INSTANCE.globalTick
+	mov edx, 0
+	mov ebx, 9
+	div ebx
+	add eax, 100
+	mov enemyHp, eax
+	mov ecx, 0
+	.while ecx < enemyAmount
+		invoke crt_rand
+		mov edx, 0
+		mov ebx, 4
+		div ebx
+		mov edgeId, edx
+		invoke crt_rand
+		mov edx, 0
+		mov ebx, 1800
+		div ebx
+		sub edx, 900
+		mov pos, edx
+		.if edgeId == 0
+			invoke createEnemy, -900, pos, enemyHp, 0
+		.elseif edgeId == 1
+			invoke createEnemy, pos, -900, enemyHp, 0
+		.elseif edgeId == 2
+			invoke createEnemy, 900, pos, enemyHp, 0
+		.elseif edgeId == 3
+			invoke createEnemy, pos, 900, enemyHp, 0
+		.endif
+		invoke addToMap, addr GAME_INSTANCE.ground, eax, T_DESTROYABLE
+		inc ecx
+	.endw
 	ret
 genEnemy endp
 
-changeMap proc
+changeMap proc uses eax ebx ecx esi edi
+	local temp:dword
+	new Player
+	mov edi, eax
+	mov temp, eax
+	mov ebx, sizeof Player
+	mov ecx, 0
+	mov esi, GAME_INSTANCE.player
+	.while ecx < ebx
+		mov al, byte ptr [esi]
+		mov byte ptr [edi], al
+		inc esi
+		inc edi
+		inc ecx
+	.endw
+	mov esi, GAME_INSTANCE.player
+	mov (Player ptr [esi]).toBeDestroyed, true
+	mov edi, temp
+	mov eax, (Player ptr [edi]).mapId
+	.if eax == 0
+		mov (Player ptr [edi]).mapId, 1
+		invoke addToMap, addr GAME_INSTANCE.underground, temp, T_DESTROYABLE
+		mov GAME_INSTANCE.playerOnGround, false
+	.else
+		mov (Player ptr [edi]).mapId, 0
+		invoke addToMap, addr GAME_INSTANCE.ground, temp, T_DESTROYABLE
+		mov GAME_INSTANCE.playerOnGround, true
+	.endif
+	mov GAME_INSTANCE.player, edi
+	mov (Player ptr [edi]).posX, 0
+	mov (Player ptr [edi]).posY, 128
 	ret
 changeMap endp
 
