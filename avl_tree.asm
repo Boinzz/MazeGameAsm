@@ -63,8 +63,11 @@ _max endp
 
 _search proc uses esi, x: dword, key: dword
 	mov esi, x
+	.if esi == nullptr
+		return esi
+	.endif
 	mov eax, (AVLTreeNode ptr [esi]).key
-	.if (esi == nullptr) || (eax == key)
+	.if eax == key
 		return esi
 	.endif
 
@@ -163,10 +166,10 @@ rightLeftRotation endp
 
 _insert proc uses esi ebx edi, tree: dword, key: dword, value: dword
 	mov esi, tree
-	mov eax, (AVLTreeNode ptr [esi]).key
 	.if esi == nullptr
 		invoke createNode, key, value, nullptr, nullptr
 		mov esi, eax
+	mov eax, (AVLTreeNode ptr [esi]).key
 	.elseif key < eax
 		invoke _insert, (AVLTreeNode ptr [esi]).left, key, value
 		invoke _height, (AVLTreeNode ptr [esi]).right

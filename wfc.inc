@@ -6,17 +6,17 @@ include windef.inc
 
 Module struct
 	id dword ?
-	upId bool ?
-	leftId bool ?
-	downId bool ?
-	rightId bool ?
+	upId _bool ?
+	leftId _bool ?
+	downId _bool ?
+	rightId _bool ?
 	probability real8 ?
 Module ends
 
 Block struct
 	id dword ?
 	availableModules dword ?
-	entropyOutdated bool ?
+	entropyOutdated _bool ?
 	entropy real8 ?
 Block ends
 

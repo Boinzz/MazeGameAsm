@@ -5,12 +5,12 @@ endm
 include windef.inc
 
 Controller struct
-	wDown bool ?
-	aDown bool ?
-	sDown bool ?
-	dDown bool ?
-	leftDown bool ?
-	rightDown bool ?
+	wDown _bool ?
+	aDown _bool ?
+	sDown _bool ?
+	dDown _bool ?
+	leftDown _bool ?
+	rightDown _bool ?
 	mouseX word ?
 	mouseY word ?
 Controller ends
@@ -23,8 +23,8 @@ loadBitmap proto, fileName: String, _width: sdword, __height: sdword
 unloadBitmap proto, bitmap: Bitmap
 onKeyDown proto, key: Key
 onKeyUp proto, key: Key
-onMouseDown proto, isLeft: bool
-onMouseUp proto, isLeft: bool
+onMouseDown proto, isLeft: _bool
+onMouseUp proto, isLeft: _bool
 onMouseMove proto, lParam: dword
 paintText proto, device: PaintDevice
 

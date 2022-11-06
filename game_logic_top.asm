@@ -42,6 +42,8 @@ P_TOWER1 byte "./tower/tower1.bmp", 0
 P_BULLET byte "./map/bullet.bmp", 0
 P_GATE byte "./map/gate.bmp", 0
 P_COIN byte "./map/coin.bmp", 0
+MIN_IJ sdword -896
+MAX_IJ sdword 960
 
 .code
 initPlayer proc uses esi ecx
@@ -365,7 +367,7 @@ createEnemy proc uses ebx edx esi edi, posX: sdword, posY: sdword, hp: sdword, m
 	return esi
 createEnemy endp
 
-createTile proc, posX: sdword, posY: sdword, isWall: bool
+createTile proc uses esi, posX: sdword, posY: sdword, isWall: _bool
 	new MapTile
 	mov esi, eax
 
@@ -394,7 +396,7 @@ createTile proc, posX: sdword, posY: sdword, isWall: bool
 	return esi
 createTile endp
 
-createTower proc, posX: sdword, posY: sdword
+createTower proc uses esi, posX: sdword, posY: sdword
 	new Tower
 	mov esi, eax
 
@@ -419,7 +421,7 @@ createTower proc, posX: sdword, posY: sdword
 	return esi
 createTower endp
 
-createBullet proc, posX: sdword, posY: sdword, velX: real8, velY: real8, damage: sdword
+createBullet proc uses esi, posX: sdword, posY: sdword, velX: real8, velY: real8, damage: sdword
 	new Bullet
 	mov esi, eax
 
@@ -439,16 +441,16 @@ createBullet proc, posX: sdword, posY: sdword, velX: real8, velY: real8, damage:
 	mov eax, posY
 	mov (Bullet ptr[esi]).posY, eax
 	fld velX
-	fst (Bullet ptr[esi]).velX
+	fstp (Bullet ptr[esi]).velX
 	fld velY
-	fst (Bullet ptr[esi]).velY
+	fstp (Bullet ptr[esi]).velY
 	mov eax, damage
 	mov (Bullet ptr[esi]).damage, eax
 
 	return esi
 createBullet endp
 
-createGate proc
+createGate proc uses esi
 	new MapTile
 	mov esi, eax
 
@@ -470,7 +472,7 @@ createGate proc
 	return esi
 createGate endp
 
-createCoin proc, posX: sdword, posY: sdword
+createCoin proc uses esi, posX: sdword, posY: sdword
 	new Destroyable
 	mov esi, eax
 
@@ -495,52 +497,226 @@ createCoin proc, posX: sdword, posY: sdword
 	return esi
 createCoin endp
 
-initMap proc
+initMap proc uses eax
+	mov GAME_INSTANCE.ground.bulletsHead, nullptr
+	mov GAME_INSTANCE.ground.bulletsEnd, nullptr
+	mov GAME_INSTANCE.ground.destroyablesHead, nullptr
+	mov GAME_INSTANCE.ground.destroyablesEnd, nullptr
+	mov GAME_INSTANCE.ground.tilesHead, nullptr
+	mov GAME_INSTANCE.ground.tilesEnd, nullptr
+	invoke createTree
+	mov GAME_INSTANCE.ground.tilesMap, eax
+
+	mov GAME_INSTANCE.underground.bulletsHead, nullptr
+	mov GAME_INSTANCE.underground.bulletsEnd, nullptr
+	mov GAME_INSTANCE.underground.destroyablesHead, nullptr
+	mov GAME_INSTANCE.underground.destroyablesEnd, nullptr
+	mov GAME_INSTANCE.underground.tilesHead, nullptr
+	mov GAME_INSTANCE.underground.tilesEnd, nullptr
+	invoke createTree
+	mov GAME_INSTANCE.underground.tilesMap, eax
+	ret
 initMap endp
 
-createGround proc
+createGround proc uses eax ebx ecx edx esi
+	local   i:sdword,
+			j:sdword
+	mov eax, MIN_IJ
+	mov i, eax
+	.while eax < MAX_IJ
+		mov eax, MIN_IJ
+		mov j, eax
+		.while eax < MAX_IJ
+			.if (i == 0) && (j == 0)
+				invoke createGate
+			.else
+				invoke createTile, i, j, false
+			.endif
+			mov esi, eax
+			invoke addToMap, addr GAME_INSTANCE.ground, eax, T_TILE
+			mov eax, i
+			cdq
+			mov ebx, 64
+			idiv ebx
+			mov ecx, eax
+			and ecx, 0ffffh
+			mov eax, j
+			cdq
+			mov ebx, 64
+			idiv ebx
+			shl eax, 16
+			or eax, ecx
+			invoke insert, GAME_INSTANCE.ground.tilesMap, eax, esi
+
+			mov eax, j
+			add eax, 64
+			mov j, eax
+		.endw
+		mov eax, i
+		add eax, 64
+		mov i, eax
+	.endw
+	ret
 createGround endp
 
-createUnderground proc
+createUnderground proc uses eax
+	invoke createTree
+	mov allBlocks, eax
+	invoke genBlock, 0, 0, true
+	ret
 createUnderground endp
 
-infiniteGenMap proc, x: sdword, y: sdword
+infiniteGenMap proc uses eax ebx edx, x: sdword, y: sdword
+	local   x1:sdword,
+			x2:sdword,
+			y1:sdword,
+			y2:sdword
+	mov eax, x
+	sar eax, 6
+	mov x1, eax
+	cdq
+	mov ebx, 24
+	idiv ebx
+	mov x2, eax
+	.if (x1 < 0) && (edx != 0)
+		mov eax, x2
+		dec eax
+		mov x2, eax
+	.endif
+	mov eax, y
+	sar eax, 6
+	mov y1, eax
+	cdq
+	mov ebx, 24
+	idiv ebx
+	mov y2, eax
+	.if (y1 < 0) && (edx != 0)
+		mov eax, y2
+		dec eax
+		mov y2, eax
+	.endif
+
+	mov eax, x2
+	mov ebx, y2
+	invoke genBlock, eax, ebx, false
+	mov eax, x2
+	mov ebx, y2
+	dec eax
+	invoke genBlock, eax, ebx, false
+	mov eax, x2
+	mov ebx, y2
+	dec ebx
+	invoke genBlock, eax, ebx, false
+	mov eax, x2
+	mov ebx, y2
+	inc eax
+	invoke genBlock, eax, ebx, false
+	mov eax, x2
+	mov ebx, y2
+	inc ebx
+	invoke genBlock, eax, ebx, false
+	mov eax, x2
+	mov ebx, y2
+	dec eax
+	dec ebx
+	invoke genBlock, eax, ebx, false
+	mov eax, x2
+	mov ebx, y2
+	dec eax
+	inc ebx
+	invoke genBlock, eax, ebx, false
+	mov eax, x2
+	mov ebx, y2
+	inc eax
+	dec ebx
+	invoke genBlock, eax, ebx, false
+	mov eax, x2
+	mov ebx, y2
+	inc eax
+	inc ebx
+	invoke genBlock, eax, ebx, false
+	ret
 infiniteGenMap endp
 
-addToMap proc, map: dword, obj: dword, _type: ObjType
+addToMap proc uses eax ebx esi edi, map: dword, obj: dword, _type: ObjType
+	new ListNode
+	mov ebx, eax
+	mov eax, obj
+	mov (ListNode ptr [ebx]).value, eax
+	mov (ListNode ptr [ebx]).next, nullptr
+	mov esi, map
+	.if _type == T_BULLET
+		mov eax, (Map ptr [esi]).bulletsHead
+		.if eax == nullptr
+			mov (Map ptr [esi]).bulletsHead, ebx
+			mov (Map ptr [esi]).bulletsEnd, ebx
+		.else
+			mov edi, (Map ptr [esi]).bulletsEnd
+			mov (ListNode ptr [edi]).next, ebx
+			mov (Map ptr [esi]).bulletsEnd, ebx
+		.endif
+	.elseif _type == T_DESTROYABLE
+		mov eax, (Map ptr [esi]).destroyablesHead
+		.if eax == nullptr
+			mov (Map ptr [esi]).destroyablesHead, ebx
+			mov (Map ptr [esi]).destroyablesEnd, ebx
+		.else
+			mov edi, (Map ptr [esi]).destroyablesEnd
+			mov (ListNode ptr [edi]).next, ebx
+			mov (Map ptr [esi]).destroyablesEnd, ebx
+		.endif
+	.elseif _type == T_TILE
+		mov eax, (Map ptr [esi]).tilesHead
+		.if eax == nullptr
+			mov (Map ptr [esi]).tilesHead, ebx
+			mov (Map ptr [esi]).tilesEnd, ebx
+		.else
+			mov edi, (Map ptr [esi]).tilesEnd
+			mov (ListNode ptr [edi]).next, ebx
+			mov (Map ptr [esi]).tilesEnd, ebx
+		.endif
+	.endif
+	ret
 addToMap endp
 
-removeFromMap proc, obj: dword
-removeFromMap endp
-
 moveLogic proc, obj: dword, velX: sdword, velY: sdword
+	return true
 moveLogic endp
 
 playerLogic proc
+	ret
 playerLogic endp
 
 enemyLogic proc, enemy: dword
+	ret
 enemyLogic endp
 
 playerAttackLogic proc
+	ret
 playerAttackLogic endp
 
 towerLogic proc, tower: dword
+	ret
 towerLogic endp
 
 bulletLogic proc, mapId: sdword, bullet: dword
+	ret
 bulletLogic endp
 
 coinLogic proc, coin: dword
+	ret
 coinLogic endp
 
 upgradeLogic proc
+	ret
 upgradeLogic endp
 
 genEnemy proc
+	ret
 genEnemy endp
 
 changeMap proc
+	ret
 changeMap endp
 
 end

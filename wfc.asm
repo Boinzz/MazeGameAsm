@@ -16,7 +16,7 @@ setModule macro _id, _upId, _leftId, _downId, _rightId, _probability
 	mov (Module ptr [esi]).downId, _downId
 	mov (Module ptr [esi]).rightId, _rightId
 	fld _probability
-	fst (Module ptr [esi]).probability
+	fstp (Module ptr [esi]).probability
 	add esi, sizeof Module
 endm
 
@@ -27,6 +27,7 @@ PROB2 real8 0.0546875
 MAX_RAND real8 32767.0
 MAX_ENTROPY real8 10000000000000000000000000000.0
 public modules
+TEST_ZERO real8 1.0
 
 .code
 initModules proc uses eax esi
@@ -73,6 +74,10 @@ initBlockMap proc uses ebx ecx edx esi edi
 		mov ebx, sizeof dword
 		mul ebx
 		add esi, eax
+		mov eax, i
+		mov edx, 0
+		mov ebx, sizeof Block
+		mul ebx
 		mov ebx, 8
 		mul ebx
 		mov edi, temp
@@ -89,6 +94,7 @@ initBlockMap proc uses ebx ecx edx esi edi
 			mov esi, dword ptr [esi]
 			mov eax, j
 			mov edx, 0
+			mov ebx, sizeof Block
 			mul ebx
 			add esi, eax
 			mov (Block ptr [esi]).id, -1
@@ -117,7 +123,7 @@ calculateEntropy proc uses eax ebx ecx esi edi, block: dword
 
 	fldz
 	fst total
-	fst entropySum
+	fstp entropySum
 
 	mov ecx, 0
 	mov esi, offset modules
@@ -130,13 +136,13 @@ calculateEntropy proc uses eax ebx ecx esi edi, block: dword
 			fld (Module ptr [esi]).probability
 			fld total
 			fadd
-			fst total
+			fstp total
 			invoke crt_log, (Module ptr [esi]).probability
 			fld (Module ptr [esi]).probability
 			fmul
 			fld entropySum
 			fadd
-			fst entropySum
+			fstp entropySum
 		.endif
 		add esi, sizeof Module
 	.endw
@@ -146,17 +152,19 @@ calculateEntropy proc uses eax ebx ecx esi edi, block: dword
 	fdiv
 	fld entropySum
 	fmul
-	fst (Block ptr [edi]).entropy
+	fstp (Block ptr [edi]).entropy
 	invoke crt_log, total
 	fld (Block ptr [edi]).entropy
 	fadd
-	fst (Block ptr [edi]).entropy
+	fstp (Block ptr [edi]).entropy
 	ret
 calculateEntropy endp
 
 collapse proc uses eax ebx ecx edx esi edi, blocks: dword, x: sdword, y: sdword
 	local   block:dword,
-			__max:real8
+			__max:real8,
+			randResult:dword
+	finit
 	mov esi, blocks
 	mov eax, x
 	mov ebx, sizeof dword
@@ -165,7 +173,7 @@ collapse proc uses eax ebx ecx edx esi edi, blocks: dword, x: sdword, y: sdword
 	add esi, eax
 	mov esi, dword ptr [esi]
 	mov eax, y
-	mov ebx, sizeof dword
+	mov ebx, sizeof Block
 	mov edx, 0
 	mul ebx
 	add esi, eax
@@ -173,6 +181,7 @@ collapse proc uses eax ebx ecx edx esi edi, blocks: dword, x: sdword, y: sdword
 	mov ecx, 0
 	fldz
 	.while ecx < 16
+		mov esi, block
 		mov esi, (Block ptr [esi]).availableModules
 		mov eax, ecx
 		mov edx, 0
@@ -188,8 +197,10 @@ collapse proc uses eax ebx ecx edx esi edi, blocks: dword, x: sdword, y: sdword
 		.endif
 		inc ecx
 	.endw
-	fst __max
+	fstp __max
 	invoke crt_rand
+	mov randResult, eax
+	fild randResult
 	fld MAX_RAND
 	fdiv
 	fld __max
@@ -213,14 +224,16 @@ collapse proc uses eax ebx ecx edx esi edi, blocks: dword, x: sdword, y: sdword
 			fldz
 			fcomp
 			fnstsw ax
-			.if (ax == 3000h) || (ax == 7000h)
-				mov esi, block
-				mov (Block ptr [esi]).id, ecx
-			.endif
+			sahf
+			jb collapse_l1
+			mov esi, block
+			mov (Block ptr [esi]).id, ecx
+			jmp collapse_l2
+collapse_l1:
 		.endif
 		inc ecx
 	.endw
-
+collapse_l2:
 	mov esi, block
 	mov eax, (Block ptr [esi]).id
 	.if eax == -1
@@ -448,6 +461,7 @@ collapseAll proc uses eax ebx ecx edx esi edi, blocks: dword
 	mov edi, 0
 	mov i, 0
 	.while i < 64
+		finit
 		fld MAX_ENTROPY
 		mov j, 0
 		.while j < 64
@@ -462,11 +476,15 @@ collapseAll proc uses eax ebx ecx edx esi edi, blocks: dword
 			fld (Block ptr [esi]).entropy
 			fcomp
 			fnstsw ax
+			sahf
+			jnb collapseAll_l1
 			mov ebx, (Block ptr [esi]).id
-			.if (ax == 3100h) && (ebx > 16)
+
+			.if ebx > 16
 				fld (Block ptr [esi]).entropy
 				mov edi, j
 			.endif
+collapseAll_l1:
 			mov eax, j
 			inc eax
 			mov j, eax
@@ -480,6 +498,7 @@ collapseAll proc uses eax ebx ecx edx esi edi, blocks: dword
 		inc eax
 		mov i, eax
 	.endw
+	ret
 collapseAll endp
 
 end

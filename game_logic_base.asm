@@ -109,7 +109,7 @@ onKeyUp proc, key: Key
 	ret
 onKeyUp endp
 
-onMouseDown proc uses eax, isLeft: bool
+onMouseDown proc uses eax, isLeft: _bool
 	mov al, true
 	.if isLeft != 0
 		mov controller.leftDown, al
@@ -119,7 +119,7 @@ onMouseDown proc uses eax, isLeft: bool
 	ret
 onMouseDown endp
 
-onMouseUp proc uses eax, isLeft: bool
+onMouseUp proc uses eax, isLeft: _bool
 	mov al, false
 	.if isLeft != 0
 		mov controller.leftDown, al

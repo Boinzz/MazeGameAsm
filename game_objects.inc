@@ -37,7 +37,7 @@ GAME_OBJECT macro
 	currentFrame sdword ?
 	nextFrame sdword ?
 	tick sdword ?
-	toBeDestroyed bool ?
+	toBeDestroyed _bool ?
 endm
 
 GameObject struct
@@ -46,7 +46,7 @@ GameObject ends
 
 MAP_TILE macro
 	extends GAME_OBJECT
-	walkable bool ?
+	walkable _bool ?
 endm
 
 MapTile struct
@@ -132,7 +132,7 @@ Map ends
 Game struct
 	ground Map <>
 	underground Map <>
-	playerOnGround bool ?
+	playerOnGround _bool ?
 	player dword ?
 	towers dword ?
 	globalTick sdword ?

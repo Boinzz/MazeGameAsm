@@ -11,8 +11,8 @@ C_DOWN textequ <2>
 C_RIGHT textequ <3>
 
 genConstraint proto, from: dword, to: dword, direction: dword
-genBlock proto, x: sdword, y: sdword, isFirst: bool
-genMap proto, x: sdword, y: sdword, blockMap: dword, isFirst: bool
+genBlock proto, x: sdword, y: sdword, isFirst: _bool
+genMap proto, x: sdword, y: sdword, blockMap: dword, isFirst: _bool
 
 ifndef __INFINITE_WFC_ASM__
 .data

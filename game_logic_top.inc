@@ -19,7 +19,7 @@ initGate proto
 initCoin proto
 createPlayer proto
 createEnemy proto, posX: sdword, posY: sdword, hp: sdword, mapId: sdword
-createTile proto, posX: sdword, posY: sdword, isWall: bool
+createTile proto, posX: sdword, posY: sdword, isWall: _bool
 createTower proto, posX: sdword, posY: sdword
 createBullet proto, posX: sdword, posY: sdword, velX: real8, velY: real8, damage: sdword
 createGate proto
@@ -29,7 +29,6 @@ createGround proto
 createUnderground proto
 infiniteGenMap proto, x: sdword, y: sdword
 addToMap proto, map: dword, obj: dword, _type: ObjType
-removeFromMap proto, obj: dword
 moveLogic proto, obj: dword, velX: sdword, velY: sdword
 playerLogic proto
 enemyLogic proto, enemy: dword

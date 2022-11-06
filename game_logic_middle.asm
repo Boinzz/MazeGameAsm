@@ -207,11 +207,11 @@ renderGameObject proc uses eax ebx edx esi, obj: dword, canvas: PaintDevice
 			objH:sdword
 
 	mov esi, obj
-	mov eax, (GameObject ptr [obj]).posX
-	mov ebx, (GameObject ptr [obj]).posY
+	mov eax, (GameObject ptr [esi]).posX
+	mov ebx, (GameObject ptr [esi]).posY
 	mov esi, GAME_INSTANCE.player
-	sub eax, (GameObject ptr [obj]).posX
-	sub ebx, (GameObject ptr [obj]).posY
+	sub eax, (GameObject ptr [esi]).posX
+	sub ebx, (GameObject ptr [esi]).posY
 	add eax, 640
 	sub eax, 32
 	add ebx, 384
@@ -220,7 +220,7 @@ renderGameObject proc uses eax ebx edx esi, obj: dword, canvas: PaintDevice
 	mov actualY, ebx
 
 	mov esi, obj
-	mov esi, (GameObject ptr [obj]).def
+	mov esi, (GameObject ptr [esi]).def
 	mov eax, (GameObjectDef ptr [esi])._width
 	mov ebx, (GameObjectDef ptr [esi]).__height
 	mov objW, eax
