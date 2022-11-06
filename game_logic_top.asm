@@ -300,25 +300,199 @@ initCoin proc uses esi
 	return esi
 initCoin endp
 
-createPlayer proc
+createPlayer proc uses esi
+	new	Player
+	mov esi, eax
+
+	mov eax, currentObjId
+	mov (Player ptr [esi]).id, eax
+	inc eax
+	mov currentObjId, eax
+	mov eax, offset objDefList.player
+	mov (Player ptr[esi]).def, eax
+	mov (Player ptr[esi]).coins, 0
+	mov (Player ptr[esi]).currentFrame, 7
+	mov (Player ptr[esi]).nextFrame, 7
+	mov (Player ptr[esi]).hp, 500
+	mov (Player ptr[esi]).level, 0
+	mov (Player ptr[esi]).mapId, 0
+	mov (Player ptr[esi]).moveStatus, MV_STILL
+	mov (Player ptr[esi]).posX, 0
+	mov (Player ptr[esi]).posY, 65
+	mov (Player ptr[esi]).speed, 8
+	mov (Player ptr[esi]).tick, 0
+	mov (Player ptr[esi]).toBeDestroyed, false
+
+	return esi
+
 createPlayer endp
 
-createEnemy proc, posX: sdword, posY: sdword, hp: sdword, mapId: sdword
+createEnemy proc uses ebx edx esi edi, posX: sdword, posY: sdword, hp: sdword, mapId: sdword
+	new	Enemy
+	mov esi, eax
+
+	mov eax, currentObjId
+	mov (Enemy ptr [esi]).id, eax
+	inc eax
+	mov currentObjId, eax
+	mov eax, offset objDefList.enemy
+	mov (Enemy ptr[esi]).def, eax
+	mov eax, hp
+	mov (Enemy ptr[esi]).hp, eax
+	mov eax, mapId
+	mov (Enemy ptr[esi]).mapId, eax
+	mov eax, posX
+	mov (Enemy ptr[esi]).posX, eax
+	mov eax, posY
+	mov (Enemy ptr[esi]).posY, eax
+	mov (Enemy ptr[esi]).moveStatus, MV_STILL
+	mov (Enemy ptr[esi]).currentFrame, 5
+	mov (Enemy ptr[esi]).nextFrame, 4
+	mov (Enemy ptr[esi]).tick, 0
+	mov (Enemy ptr[esi]).toBeDestroyed, false
+	
+	invoke crt_rand 
+	mov edx, 0
+	mov ebx, 4
+	div ebx
+	mov eax, edx
+	mov edi, GAME_INSTANCE.towers
+	mov ebx, 4
+	mul ebx
+	add edi, eax
+	mov eax, (Tower ptr [edi]).id
+	mov (Enemy ptr [esi]).targetId, eax
+	return esi
 createEnemy endp
 
 createTile proc, posX: sdword, posY: sdword, isWall: bool
+	new MapTile
+	mov esi, eax
+
+	mov eax, currentObjId
+	mov (MapTile ptr[esi]).id, eax
+	inc eax
+	mov currentObjId, eax
+	.if isWall
+		mov (MapTile ptr[esi]).walkable, false
+		mov eax, offset objDefList.wall
+		mov (MapTile ptr[esi]).def, eax
+	.else
+		mov (MapTile ptr[esi]).walkable, true
+		mov eax, offset objDefList.ground
+		mov (MapTile ptr[esi]).def, eax
+	.endif
+	mov (MapTile ptr[esi]).currentFrame, 0
+	mov (MapTile ptr[esi]).nextFrame, 0
+	mov (MapTile ptr[esi]).tick, 0
+	mov (MapTile ptr[esi]).toBeDestroyed, false
+	mov eax, posX
+	mov (MapTile ptr[esi]).posX, eax
+	mov eax, posY
+	mov (MapTile ptr[esi]).posY, eax
+
+	return esi
 createTile endp
 
 createTower proc, posX: sdword, posY: sdword
+	new Tower
+	mov esi, eax
+
+	mov eax, currentObjId
+	mov (Tower ptr[esi]).id, eax
+	inc eax
+	mov currentObjId, eax
+
+	mov eax, offset objDefList.tower
+	mov (Tower ptr[esi]).def, eax
+	mov (Tower ptr[esi]).currentFrame, 0
+	mov (Tower ptr[esi]).nextFrame, 0
+	mov (Tower ptr[esi]).tick, 0
+	mov (Tower ptr[esi]).toBeDestroyed, false
+	mov (Tower ptr[esi]).hp, 1000
+	mov (Tower ptr[esi]).level, 0
+	mov eax, posX
+	mov (Tower ptr[esi]).posX, eax
+	mov eax, posY
+	mov (Tower ptr[esi]).posY, eax
+
+	return esi
 createTower endp
 
 createBullet proc, posX: sdword, posY: sdword, velX: real8, velY: real8, damage: sdword
+	new Bullet
+	mov esi, eax
+
+	mov eax, currentObjId
+	mov (Bullet ptr[esi]).id, eax
+	inc eax
+	mov currentObjId, eax
+
+	mov eax, offset objDefList.bullet
+	mov (Bullet ptr[esi]).def, eax
+	mov (Bullet ptr[esi]).currentFrame, 0
+	mov (Bullet ptr[esi]).nextFrame, 0
+	mov (Bullet ptr[esi]).tick, 0
+	mov (Bullet ptr[esi]).toBeDestroyed, false
+	mov eax, posX
+	mov (Bullet ptr[esi]).posX, eax
+	mov eax, posY
+	mov (Bullet ptr[esi]).posY, eax
+	fld velX
+	fst (Bullet ptr[esi]).velX
+	fld velY
+	fst (Bullet ptr[esi]).velY
+	mov eax, damage
+	mov (Bullet ptr[esi]).damage, eax
+
+	return esi
 createBullet endp
 
 createGate proc
+	new MapTile
+	mov esi, eax
+
+	mov eax, currentObjId
+	mov (MapTile ptr[esi]).id, eax
+	inc eax
+	mov currentObjId, eax
+
+	mov (MapTile ptr[esi]).walkable, true
+	mov eax, offset objDefList.gate
+	mov (MapTile ptr[esi]).def, eax
+	mov (MapTile ptr[esi]).currentFrame, 0
+	mov (MapTile ptr[esi]).nextFrame, 0
+	mov (MapTile ptr[esi]).tick, 0
+	mov (MapTile ptr[esi]).toBeDestroyed, false
+	mov (MapTile ptr[esi]).posX, 0
+	mov (MapTile ptr[esi]).posY, 0
+
+	return esi
 createGate endp
 
 createCoin proc, posX: sdword, posY: sdword
+	new Destroyable
+	mov esi, eax
+
+	mov eax, currentObjId
+	mov (Destroyable ptr[esi]).id, eax
+	inc eax
+	mov currentObjId, eax
+
+	mov eax, offset objDefList.coin
+	mov (Destroyable ptr[esi]).def, eax
+	mov (Destroyable ptr[esi]).mapId, 1
+	mov (Destroyable ptr[esi]).currentFrame, 0
+	mov (Destroyable ptr[esi]).nextFrame, 0
+	mov (Destroyable ptr[esi]).tick, 0
+	mov (Destroyable ptr[esi]).hp, 1
+	mov (Destroyable ptr[esi]).toBeDestroyed, false
+	mov eax, posX
+	mov (Destroyable ptr[esi]).posX, eax
+	mov eax, posY
+	mov (Destroyable ptr[esi]).posY, eax
+
+	return esi
 createCoin endp
 
 initMap proc
